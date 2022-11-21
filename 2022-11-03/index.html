@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.26/vue.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/0.7.13/vue-router.min.js"> </script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<div class="container">
+    <header>
+        <div class="branding">
+            <H1>Zoo Animal - Cuidadores do Zoológico</H1>
+        </div>
+    </header>
+    <main id="zoo"> <!--Esta tag é para indicar que o HTML possuirá Vue.Js , no caso, a aplicação terá o nome de "zoo"-->
+        <router-view></router-view>
+    </main>
+</div>
+
+<template id="cuidadorLista">
+    <div class="action">
+        <a class="btn btn-default" v-link="{path:'/incluirCuidador'}">
+            <span class="lyphicon glyphicon-plus"></span>
+            Incluir Cuidador ao Quadro do Zoológico
+        </a>
+    </div> 
+    
+    
+    <div class="filters row">
+        <div class="form-group col-sm-3">
+            <input v-model="searchKey" class="form-control" placeholder="Procurar Cuidador" id="search-element" required/>
+        </div>
+    </div>
+    <table id="myTable" class="table highlight bordered">
+         <thead>
+            <tr>
+                <th>Matrícula</th>
+                <th>Cuidador</th>
+                <th>Adicionar Jaula</th>
+                <th>Excluir Cuidador</th>
+                <th>Editar Cuidador</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="cuidador in cuidadores| filterBy searchKey in 'iCuid'">
+                <td>
+                    {{cuidador.nMatrCuid}}
+                </td>
+                <td>
+                    {{cuidador.iCuid}}
+                </td>
+                <td>
+                  <button type="button" class="btn btn-outline-warning">Relacionar Jaula</button>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-outline-danger" v-link="{name: 'excluir-cuidador', params:{cuidador_id: cuidador.idCuid}}">Excluir</button>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-outline-info" v-link="{name: 'editar-cuidador', params:{cuidador_id: cuidador.idCuid}}">Editar</button>
+                </td>
+            <tr>
+        <tbody>
+
+    </table>
+
+</template>
+
+
+
+
+<template id="incluirCuidador">
+    <p>Zoo Animal - Adicionar Cuidador</p>
+
+    <form @submit.prevent="salvarCuidador">
+        <div class="form-group">
+            <label for="matricula">Matrícula do Cuidador</label><br>
+            <input class="form-control" id="nMatrCuid" type="text" v-model="nMatrCuid" readonly="true" />
+        </div>
+
+        <div class="form-group">
+            <label for="nome">Nome do Cuidador</label><br>
+            <input class="form-control" id="iCuid" type="text" v-model="iCuid" required   />
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 58vw; margin-left: 7vw; margin-top: 50px">Cadastrar</button>
+
+    </form>
+</template>
+
+<template id="excluirCuidador">
+    <p>Zoo Animal - Excluir Cuidador - Tem certeza?</p>
+
+    <form @submit.prevent="excluirCuidadorMetodo">
+        <div class="form-group">
+            <label for="matriculaex">Matrícula do Cuidador</label><br>
+            <input class="form-control" id="nMatrCuidEx" type="text" v-model="cuidador.nMatrCuid" disabled />
+        </div>
+
+        <div class="form-group">
+            <label for="nomeex">Nome do Cuidador</label><br>
+            <input class="form-control" id="iCuidEx" type="text" v-model="cuidador.iCuid" disabled />
+        </div>
+
+        <button type="submit"  class="btn btn-outline-danger">Excluir</button>
+
+    </form>
+</template>
+
+<template id="alterarCuidador">
+    <p>Zoo Animal - Alterar Cuidador - Conferir os dados antes de salvar</p>
+
+    <form @submit.prevent="alterarCuidadorMetodo">
+        <div class="form-group">
+            <label for="idCuidador">Chave do Cuidador</label><br>
+            <input class="form-control" id="idCuidAl" type="text" v-model="cuidadoralterar.idCuid" />
+        </div>
+
+        <div class="form-group">
+            <label for="matriculaal">Matrícula do Cuidador</label><br>
+            <input class="form-control" id="nMatrCuidAl" type="text" v-model="cuidadoralterar.nMatrCuid" />
+        </div>
+
+        <div class="form-group">
+            <label for="nomeal">Nome do Cuidador</label><br>
+            <input class="form-control" id="iCuidAl" type="text" v-model="cuidadoralterar.iCuid" />
+        </div>
+
+        <button type="submit" class="btn btn-outline-info">Alterar</button>
+
+    </form>
+</template>
+
+<!--Área destinada ao java script que será utilizado o Vue.js "através de componente na internet e não instalado"-->
+<script> 
+    var cuidadores = [];
+
+    //utilizar o método extend do Vue, preenchendo os parâmetros que serão utilizados da api
+    var ExibirCuidadores = Vue.extend({
+        template:'#cuidadorLista',
+        data: function(){
+            axios.get('http://localhost:8080/api/exibirCuidadores').then(resp =>{
+                this.cuidadores = (resp.data)
+
+            });
+            return {cuidadores: cuidadores, searchKey:''}
+        }
+
+
+    });
+
+    //Incluindo um cuidador
+    var incluirCuidador = Vue.extend({
+            template: '#incluirCuidador',
+            data: function(){ //Obter o último número de matrícula do cuidador
+                axios.get('http://localhost:8080/api/retornaNovaMatricula').then(resp =>{
+                        this.nMatrCuid = (resp.data)
+
+                    });
+
+                return{
+                    nMatrCuid: '',
+                    iCuid: ''
+                }
+            },
+            methods:{
+                salvarCuidador(){
+                    var blnIncluiu = false;
+                    axios.post('http://localhost:8080/api/inserirCuidador',{
+                        nMatrCuid: this.nMatrCuid,
+                        iCuid: this.iCuid
+                    }).then(resp => {
+                        axios.get('http://localhost:8080/api/exibirCuidadores').then(resp =>{
+                                                                                            this.cuidadores = (resp.data)
+                                                                                            }).then(resp=> {router.go('/');});
+                    });
+                }
+            }
+
+        });
+        var cuidador = [];
+        var excluirCuidador = Vue.extend({
+            template: '#excluirCuidador',
+            data: function(){
+                axios.get('http://localhost:8080/api/procurarCuidador/' + this.$route.params.cuidador_id).then(resp =>{
+                        this.cuidador = (resp.data)
+                    });
+                return{
+                    cuidador
+                }
+            },
+            methods: {
+                excluirCuidadorMetodo(){
+                    axios.delete('http://localhost:8080/api/excluirCuidador/' + this.$route.params.cuidador_id).then(resp =>{ 
+                        router.go('/')
+                    });
+                }
+            }
+        })
+
+
+        var cuidadoralterar = [];
+        var alterarCuidador = Vue.extend({
+            template: '#alterarCuidador',
+            data: function(){
+                axios.get('http://localhost:8080/api/procurarCuidador/' + this.$route.params.cuidador_id).then(resp =>{
+                        this.cuidadoralterar = (resp.data)
+                    });
+                return{
+                    cuidadoralterar
+                }
+            },
+            methods: {
+                alterarCuidadorMetodo(){
+                    axios.post('http://localhost:8080/api/editarCuidador',{
+                        idCuid: this.cuidadoralterar.idCuid,
+                        nMatrCuid: this.cuidadoralterar.nMatrCuid,
+                        iCuid: this.cuidadoralterar.iCuid
+                    }).then(resp =>{
+                        router.go('/');
+                    });
+                    
+                }
+            }
+        })
+
+    var router = new VueRouter();
+    router.map({
+        '/': {component: ExibirCuidadores},
+        '/incluirCuidador' :{component: incluirCuidador},
+        '/excluirCuidador/:cuidador_id/confirmacao': {component: excluirCuidador, name: 'excluir-cuidador'},
+        '/alterarCuidador/:cuidador_id/confirmacao': {component: alterarCuidador, name: 'editar-cuidador'}
+    })
+    .start(Vue.extend({}), '#zoo')
+
+</script>
+</body>
+
+
+</html>
